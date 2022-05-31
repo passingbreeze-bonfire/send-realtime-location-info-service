@@ -203,7 +203,7 @@ resource "aws_iam_policy" "firehose_delivery_policy" {
                 "logs:PutLogEvents"
             ],
             "Resource": [
-                "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/terraform-kinesis-truck:log-stream:*"
+                "arn:aws:logs:${var.region}:${var.account_id}:log-group:/aws/kinesisfirehose/${aws_kinesis_stream.truck_stream.name}:log-stream:*"
             ]
         },
         {
@@ -214,7 +214,7 @@ resource "aws_iam_policy" "firehose_delivery_policy" {
                 "kinesis:GetShardIterator",
                 "kinesis:GetRecords"
             ],
-            "Resource": "arn:aws:kinesis:${var.region}:${var.account_id}:stream/terraform-kinesis-truck"
+            "Resource": "*"
         }
     ]
   })

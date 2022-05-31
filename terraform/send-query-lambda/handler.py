@@ -14,7 +14,7 @@ destination_url = os.environ.get("DESTINATION_URL") # 고객에게 전송
 # DynamoDB
 resource = boto3.resource('dynamodb')
 table = resource.Table(os.environ.get("DB_TABLE_NAME"))
-client = boto3.client('apigatewaymanagementapi', endpoint_url=destination_url)
+client = boto3.client('apigatewaymanagementapi', endpoint_url = destination_url)
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -35,7 +35,7 @@ async def async_handler(event, context, trucks_loc):
     
         begin, cur, dest = {}, {}, {}
         begin['lon'], begin['lat'] = float(trucks_loc[id]['from_lon']), float(trucks_loc[id]['from_lat'])
-        cur['lon'], cur['lat'] = float(res_truck['lon']), float(res_truck['lat'])
+        cur['lon'], cur['lat'] = float(res_truck['location']['lon']), float(res_truck['location']['lat'])
         dest['lon'], dest['lat'] = float(trucks_loc[id]['to_lon']), float(trucks_loc[id]['to_lat'])
         
         res_truck['connection_Id'] = id

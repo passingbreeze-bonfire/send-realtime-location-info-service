@@ -8,7 +8,7 @@ Summary
 
 Architecture
 -------------
-![Architecture Pictures](https://user-images.githubusercontent.com/25300991/170899086-7f68fbcb-8509-40f9-b076-cfd9c23891f9.jpeg)
+![Architecture Pictures](https://s3.us-west-2.amazonaws.com/secure.notion-static.com/0a128489-8464-44b6-9a96-d8ee60567dc4/final-scenario2-docu.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAT73L2G45EIPT3X45%2F20220530%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20220530T060046Z&X-Amz-Expires=86400&X-Amz-Signature=fae5b84b5a4686d49da1186d297474a21422b40a9f8895dd59f7705c24220a03&X-Amz-SignedHeaders=host&response-content-disposition=filename%20%3D%22final-scenario2-docu.jpg%22&x-id=GetObject)
 
 1. Real-time Driver info Data Stream Part (Yellow Part)
    *  실시간으로 들어오는 배송 기사들의 위치 정보 로그는 AWS Kinesis Data Stream에 의해 Streamed Data가 됩니다.
