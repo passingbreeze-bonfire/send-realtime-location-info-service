@@ -94,5 +94,6 @@ func SendFiles(serverUrl string, dirname string) {
 		} else {
 			log.Fatal("Inproper response")
 		}
+		log.Println(f.Name() + "Send Successful!")
 	}
 }
