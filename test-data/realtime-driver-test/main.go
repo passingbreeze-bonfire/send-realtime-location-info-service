@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -71,7 +72,7 @@ func SendFiles(serverUrl string, dirname string) {
 	for _, f := range files {
 		var tlog TruckLog
 		fileName := dirname + "/" + f.Name()
-		// fmt.Println("Open file : ", fileName)
+		fmt.Println("Open file : ", fileName)
 		content, err := ioutil.ReadFile(fileName)
 		if err != nil {
 			panic(err)
