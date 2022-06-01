@@ -62,7 +62,7 @@ func main() {
 }
 
 func SendFiles(serverUrl string, dirname string) {
-	log.Println("Open Directory : ", dirname)
+	log.Println("Open Directory :", dirname)
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(err)
@@ -94,6 +94,6 @@ func SendFiles(serverUrl string, dirname string) {
 		} else {
 			log.Fatal("Inproper response")
 		}
-		log.Println(f.Name() + "Send Successful!")
+		log.Println(f.Name() + " Send Successful!")
 	}
 }
