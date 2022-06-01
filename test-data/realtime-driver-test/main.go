@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -16,6 +15,8 @@ import (
 )
 
 const TESTDIR string = "./test_data"
+const MIN_SEC int = 5
+const INTERVAL int = 40
 
 var wg sync.WaitGroup
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -63,7 +64,7 @@ func main() {
 }
 
 func SendFiles(serverUrl string, dirname string) {
-	log.Println("Open Directory :", dirname)
+	log.Printf("[%s] <- Open Directory\n", dirname)
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(err)
@@ -72,7 +73,7 @@ func SendFiles(serverUrl string, dirname string) {
 	for _, f := range files {
 		var tlog TruckLog
 		fileName := dirname + "/" + f.Name()
-		fmt.Println("Open file : ", fileName)
+		log.Printf("[%s] <- Open file\n", f.Name())
 		content, err := ioutil.ReadFile(fileName)
 		if err != nil {
 			panic(err)
@@ -84,17 +85,24 @@ func SendFiles(serverUrl string, dirname string) {
 		if err != nil {
 			log.Fatal("JSON decoding Error")
 		}
+
 		buffjson := bytes.NewBuffer(cbytes)
+
 		response, err := http.Post(serverUrl, "application/json", buffjson)
 		if err != nil {
 			log.Fatal("POST Send Failed")
 		}
+		defer response.Body.Close()
 		resp_success := ((response.StatusCode >= 200) && (response.StatusCode < 400))
 		if resp_success {
-			time.Sleep(time.Duration((rand.Uint64() * 10) + 30))
+			log.Printf("[%s] <- Sent Successful!\n", f.Name())
+			rand.Seed(time.Now().UnixNano())
+			sleepTime := MIN_SEC + rand.Intn(INTERVAL)
+			log.Printf("Moving...%ds\n", sleepTime)
+			time.Sleep(time.Second * time.Duration(sleepTime))
 		} else {
-			log.Fatal("Inproper response")
+			log.Fatalf("[%s] <- Send Failed and Program will be terminated\n", f.Name())
 		}
-		log.Println(f.Name() + " Send Successful!")
+
 	}
 }
