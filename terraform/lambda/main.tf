@@ -24,7 +24,7 @@ terraform {
 }
 
 provider "aws" {
-  profile = "gmail"
+  profile = "kakao"
   region  = "ap-northeast-2"
 }
 
