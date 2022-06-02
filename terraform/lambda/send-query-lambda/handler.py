@@ -16,6 +16,7 @@ resource = boto3.resource('dynamodb')
 table = resource.Table(os.environ.get("DB_TABLE_NAME"))
 client = boto3.client('apigatewaymanagementapi', endpoint_url = destination_url)
 
+# convert Decimal to string
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
       return str(obj) if isinstance(obj, Decimal) else json.JSONEncoder.default(self, obj)

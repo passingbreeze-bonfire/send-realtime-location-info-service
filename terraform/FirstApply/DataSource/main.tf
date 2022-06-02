@@ -16,12 +16,13 @@ terraform {
 }
 
 provider "aws" {
-  profile = "kakao"
   region  = "ap-northeast-2"
+  access_key = var.access_key
+  secret_key = var.secret_key
 }
 
-resource "aws_dynamodb_table" "connectionIds" {
-  name = "connectionIds"
+resource "aws_dynamodb_table" "connectionTable" {
+  name = "connectionTable"
   billing_mode = "PAY_PER_REQUEST"
   hash_key = "connection_Id"
 
@@ -31,7 +32,7 @@ resource "aws_dynamodb_table" "connectionIds" {
   }
 
   tags = {
-      Name = "connectionIds"
+      Name = "Connection"
       Environment = "pay_per_request"
   }
 }

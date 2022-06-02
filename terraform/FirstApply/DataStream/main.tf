@@ -1,3 +1,151 @@
+terraform {
+  required_version = ">= 1.0.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+  }
+
+  backend "s3" {
+    bucket = "fin-scenario2"
+    key = "fin-scenario2-kinesis.tfstate"
+    region = "ap-northeast-2"
+  }
+}
+
+provider "aws" {
+  region  = "ap-northeast-2"
+  access_key = var.access_key
+  secret_key = var.secret_key
+}
+
+resource "aws_opensearch_domain" "truck" {
+  domain_name = "truck"
+  engine_version = "OpenSearch_1.2"
+
+  node_to_node_encryption {
+    enabled = true
+  }
+
+  encrypt_at_rest {
+    enabled = true
+  }
+
+  domain_endpoint_options {
+    enforce_https = true
+    tls_security_policy = "Policy-Min-TLS-1-0-2019-07"
+  }
+
+  ebs_options {
+    ebs_enabled = true
+    volume_size = 10
+    volume_type = "gp2"
+  }
+
+  advanced_security_options {
+    enabled = true
+    internal_user_database_enabled = true
+
+    master_user_options {
+      master_user_name = var.user_name
+      master_user_password = var.user_password
+    }
+  }
+
+  cluster_config {
+    instance_type = "t3.small.search"
+  }
+}
+
+
+
+resource "aws_kinesis_stream" "truck_stream" {
+  name = "terraform-kinesis-truck"
+  retention_period = 24
+
+  shard_level_metrics = [
+      "IncomingBytes",
+      "OutgoingBytes",
+  ]
+
+  stream_mode_details {
+    stream_mode = "ON_DEMAND"
+  }
+
+  tags = {
+      Environment = "truck_stream"
+  }
+}
+
+resource "aws_s3_bucket" "bucket" {
+  bucket = "tf-truck-bucket"
+}
+
+resource "aws_s3_bucket_acl" "bucket_acl" {
+  bucket = aws_s3_bucket.bucket.id
+  acl = "private"
+}
+
+resource "aws_kinesis_firehose_delivery_stream" "truck_firehose" {
+  name = "terraform-kinesis-firehose-truck-firehose"
+  destination = "elasticsearch"
+
+  s3_configuration {
+    role_arn = aws_iam_role.firehose_role.arn
+    bucket_arn = aws_s3_bucket.bucket.arn
+    buffer_size = 10
+    buffer_interval = 400
+    compression_format = "GZIP"
+  }
+
+  kinesis_source_configuration {
+    kinesis_stream_arn = aws_kinesis_stream.truck_stream.arn
+    role_arn = aws_iam_role.firehose_role.arn
+  }
+
+  elasticsearch_configuration {
+    domain_arn = aws_opensearch_domain.truck.arn
+    role_arn = aws_iam_role.firehose_role.arn
+    index_name = "opensearch-index"
+    retry_duration = 60
+    index_rotation_period = "NoRotation"
+    buffering_interval = 60
+    buffering_size = 5
+
+    cloudwatch_logging_options {
+      enabled = true
+      log_group_name = "firehose-log"
+      log_stream_name = "stream-log"
+    }
+  }
+}
+
+
+resource "aws_opensearch_domain_policy" "main" {
+  domain_name = aws_opensearch_domain.truck.domain_name
+
+  access_policies = <<POLICIES
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": "es:*",
+      "Condition": {
+          "IpAddress": {"aws:SourceIp": "218.235.89.144/32"}
+      },
+      "Resource": "${aws_opensearch_domain.truck.arn}/*"
+    }
+  ]
+}
+POLICIES
+}
+
 resource "aws_iam_role" "firehose_role" {
   name = "firehose_test_role"
 
@@ -18,120 +166,6 @@ resource "aws_iam_role" "firehose_role" {
 EOF
 }
 
-resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
-}
-
-resource "aws_iam_role_policy_attachment" "iam_for_lambda" {
-  role       = aws_iam_role.iam_for_lambda.name
-  policy_arn = aws_iam_policy.iam_for_lambda.arn
-}
-
-resource "aws_iam_policy" "iam_for_lambda" {
-    policy = data.aws_iam_policy_document.iam_for_lambda.json
-}
-
-data "aws_iam_policy_document" "iam_for_lambda" {
-  statement {
-    sid       = "AllowSQSPermissions"
-    effect    = "Allow"
-    resources = ["arn:aws:sqs:*"]
-
-    actions = [
-      "sqs:ChangeMessageVisibility",
-      "sqs:DeleteMessage",
-      "sqs:GetQueueAttributes",
-      "sqs:ReceiveMessage",
-      "sqs:SendMessage"
-    ]
-  }
-
-  statement {
-    sid       = "AllowDynamoPermissions"
-    effect    = "Allow"
-    resources = ["${aws_dynamodb_table.Connection.arn}"]
-
-    actions = [
-        "dynamodb:*",
-    ]
-  }
-
-  statement {
-    sid       = "AllowInvokingLambdas"
-    effect    = "Allow"
-    resources = ["arn:aws:lambda:ap-northeast-2:*:function:*"]
-    actions   = ["lambda:InvokeFunction"]
-  }
-
-  statement {
-    sid       = "AllowKinesisLambdas"
-    effect    = "Allow"
-    resources = ["*"]
-    actions   = ["kinesis:*"]    
-  }
-
-  statement {
-    sid       = "AllowEsPermission"
-    effect    = "Allow"
-    resources = [
-      "*",
-    ]
-    actions   = [
-      "es:ESHttpGet",
-      "es:ESHttpPut",
-      "es:ESHttpPost",
-      "es:ESHttpHead",
-      "es:ESHttpDelete",
-      "es:Describe*",
-      "es:List*"
-      ]
-  }
-
-  statement {
-    sid       = "AllowAPIGatewayInvokePermission"
-    effect    = "Allow"
-    resources = [
-      "arn:aws:execute-api:*:*:*",
-    ]
-    actions   = [
-        "execute-api:Invoke",
-        "execute-api:ManageConnections"
-      ]
-  }
-
-  statement {
-    sid       = "AllowCreatingLogGroups"
-    effect    = "Allow"
-    resources = ["arn:aws:logs:ap-northeast-2:*:*"]
-    actions   = ["logs:CreateLogGroup"]
-  }
-  statement {
-    sid       = "AllowWritingLogs"
-    effect    = "Allow"
-    resources = ["arn:aws:logs:ap-northeast-2:*:log-group:/aws/lambda/*:*"]
-
-    actions = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-    ]
-  }
-}
 
 resource "aws_iam_policy" "firehose_es_delivery_policy" {
   name = "firehose-es-delivery-policy"
