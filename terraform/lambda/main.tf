@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "fin-scenario2"
+    bucket = "terraform-state-teama"
     key = "fin-scenario2-lambda.tfstate"
     region = "ap-northeast-2"
   }
@@ -17,15 +17,14 @@ terraform {
 
 provider "aws" {
   region  = "ap-northeast-2"
-  access_key = var.access_key
-  secret_key = var.secret_key
+  profile = "gmail"
 }
 
 data "terraform_remote_state" "dynamoTable" {
     backend = "s3"
 
   config = {
-    bucket = "fin-scenario2"
+    bucket = "terraform-state-teama"
     key = "fin-scenario2-db.tfstate"
     region = "ap-northeast-2"
   }
@@ -35,11 +34,13 @@ data "terraform_remote_state" "kinesisStream" {
     backend = "s3"
 
   config = {
-    bucket = "fin-scenario2"
+    bucket = "terraform-state-teama"
     key = "fin-scenario2-kinesis.tfstate"
     region = "ap-northeast-2"
   }
 }
+
+######### lambda file ###########
 
 data "archive_file" "send_query_lambda" {
   type = "zip"
@@ -76,7 +77,7 @@ resource "aws_lambda_layer_version" "lambda_layer" {
 
 resource "aws_lambda_function" "send_query_lambda" {
   filename = "${path.module}/files/send-query-lambda.zip"
-  function_name = "send-query-lambda"
+  function_name = "send-query-lambda-from-terraform"
   role = aws_iam_role.iam_for_lambda.arn
   handler = "handler.lambda_handler"
 
@@ -89,7 +90,7 @@ resource "aws_lambda_function" "send_query_lambda" {
   environment {
     variables = {
         OPENSEARCH_DOMAIN = data.terraform_remote_state.kinesisStream.outputs.opensearchEndpoint
-        OPENSEARCH_INDEX = var.opensearch_index
+        OPENSEARCH_INDEX = "terraform-truck-drivers-log"
         DESTINATION_URL = aws_apigatewayv2_stage.socket.invoke_url
         DB_TABLE_NAME = data.terraform_remote_state.dynamoTable.outputs.tableName
     }
@@ -134,7 +135,7 @@ resource "aws_lambda_function_event_invoke_config" "send_query_lambda" {
 
 # EventBridge
 resource "aws_cloudwatch_event_rule" "lambda_event_rule" {
-  name = "lambda-event-rule"
+  name = "lambda-event-rule-terraform"
   description = "trigger lambda every 1 min"
   schedule_expression = "rate(1 minute)"
 }
@@ -156,7 +157,7 @@ resource "aws_lambda_permission" "allow_event_call" {
 
 resource "aws_lambda_function" "connect_lambda" {
   filename = "${path.module}/files/connect-lambda.zip"
-  function_name = "connect-lambda"
+  function_name = "connect-lambda-terraform"
   role = aws_iam_role.iam_for_lambda.arn
   handler = "handler.lambda_handler"
 
@@ -250,7 +251,7 @@ resource "aws_lambda_permission" "lambda_permission" {
 
 resource "aws_lambda_function" "send_truck_data_lambda" {
   filename = "${path.module}/files/send-truck-data-lambda.zip"
-  function_name = "send-truck-data-lambda"
+  function_name = "send-truck-data-lambda-terraform"
   role = aws_iam_role.iam_for_lambda.arn
   handler = "handler.lambda_handler"
 
@@ -358,7 +359,7 @@ resource "aws_api_gateway_integration_response" "send_truck_data_api" {
 
 #################################################################33
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+  name = "iam_for_lambda-from-terraform"
 
   assume_role_policy = <<EOF
 {

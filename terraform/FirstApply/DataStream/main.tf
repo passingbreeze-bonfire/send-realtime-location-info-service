@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "fin-scenario2"
+    bucket = "terraform-state-teama"
     key = "fin-scenario2-kinesis.tfstate"
     region = "ap-northeast-2"
   }
@@ -17,12 +17,11 @@ terraform {
 
 provider "aws" {
   region  = "ap-northeast-2"
-  access_key = var.access_key
-  secret_key = var.secret_key
+  profile = "gmail"
 }
 
 resource "aws_opensearch_domain" "truck" {
-  domain_name = "truck"
+  domain_name = "terraform-truck-logs"
   engine_version = "OpenSearch_1.2"
 
   node_to_node_encryption {
@@ -49,8 +48,8 @@ resource "aws_opensearch_domain" "truck" {
     internal_user_database_enabled = true
 
     master_user_options {
-      master_user_name = var.user_name
-      master_user_password = var.user_password
+      master_user_name = var.master_user_name
+      master_user_password = var.master_user_password
     }
   }
 
@@ -108,7 +107,7 @@ resource "aws_kinesis_firehose_delivery_stream" "truck_firehose" {
   elasticsearch_configuration {
     domain_arn = aws_opensearch_domain.truck.arn
     role_arn = aws_iam_role.firehose_role.arn
-    index_name = "opensearch-index"
+    index_name = "terraform-truck-drivers-log"
     retry_duration = 60
     index_rotation_period = "NoRotation"
     buffering_interval = 60
@@ -147,7 +146,7 @@ POLICIES
 }
 
 resource "aws_iam_role" "firehose_role" {
-  name = "firehose_test_role"
+  name = "terraform_firehose_role"
 
   assume_role_policy = <<EOF
 {
@@ -168,9 +167,9 @@ EOF
 
 
 resource "aws_iam_policy" "firehose_es_delivery_policy" {
-  name = "firehose-es-delivery-policy"
+  name = "terraform-firehose-es-delivery-policy"
   path = "/"
-  description = "Kinesis Firehose ES delivery policy"
+  description = "Kinesis Firehose ES delivery policy from terraform"
 
   policy = jsonencode({
     "Version": "2012-10-17",
@@ -212,9 +211,9 @@ resource "aws_iam_policy" "firehose_es_delivery_policy" {
 }
 
 resource "aws_iam_policy" "firehose_delivery_policy" {
-  name        = "firehose-delivery-policy"
+  name        = "terraform-firehose-delivery-policy"
   path        = "/"
-  description = "Kinesis Firehose delivery policy"
+  description = "Kinesis Firehose delivery policy from terraform"
 
   policy = jsonencode({
     "Version": "2012-10-17",

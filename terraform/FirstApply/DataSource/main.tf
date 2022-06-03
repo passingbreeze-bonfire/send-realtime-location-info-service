@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "fin-scenario2"
+    bucket = "terraform-state-teama"
     key = "fin-scenario2-db.tfstate"
     region = "ap-northeast-2"
   }
@@ -17,8 +17,7 @@ terraform {
 
 provider "aws" {
   region  = "ap-northeast-2"
-  access_key = var.access_key
-  secret_key = var.secret_key
+  profile = "gmail"
 }
 
 resource "aws_dynamodb_table" "connectionTable" {
