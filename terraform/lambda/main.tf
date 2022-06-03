@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "terraform-state-teama"
+    bucket = "terraform-state-teama"  # 미리 만들어둔 bucket, 테라폼으로 만들면 안됩니다.
     key = "fin-scenario2-lambda.tfstate"
     region = "ap-northeast-2"
   }
