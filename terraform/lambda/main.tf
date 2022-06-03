@@ -166,6 +166,12 @@ resource "aws_lambda_function" "connect_lambda" {
   timeout = 60
 
   runtime = "python3.8"
+
+  environment {
+    variables = {
+        DB_TABLE_NAME = data.terraform_remote_state.dynamoTable.outputs.tableName
+    }
+  }
 }
 
 # CloudWatch

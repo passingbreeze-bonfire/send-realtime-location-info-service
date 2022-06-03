@@ -135,9 +135,6 @@ resource "aws_opensearch_domain_policy" "main" {
         "AWS": "*"
       },
       "Action": "es:*",
-      "Condition": {
-          "IpAddress": {"aws:SourceIp": "218.235.89.144/32"}
-      },
       "Resource": "${aws_opensearch_domain.truck.arn}/*"
     }
   ]

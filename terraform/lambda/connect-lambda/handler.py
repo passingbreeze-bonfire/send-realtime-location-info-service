@@ -6,7 +6,7 @@ import logging
 def lambda_handler(event, context):
     connection_id = event["requestContext"]["connectionId"]
     dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('Connection')    
+    table = dynamodb.Table(os.environ.get("DB_TABLE_NAME"))    
 
     ###### $connect
     if event["requestContext"]["eventType"] == "CONNECT":
