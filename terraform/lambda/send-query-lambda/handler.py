@@ -9,12 +9,12 @@ credentials = boto3.Session().get_credentials()
 auth = AWSV4SignerAuth(credentials, region)
 
 host, index = os.environ.get("OPENSEARCH_DOMAIN"), os.environ.get("OPENSEARCH_INDEX")
-destination_url = os.environ.get("DESTINATION_URL") # 고객에게 전송
+
 
 # DynamoDB
 resource = boto3.resource('dynamodb')
 table = resource.Table(os.environ.get("DB_TABLE_NAME"))
-client = boto3.client('apigatewaymanagementapi', endpoint_url = destination_url)
+
 
 # convert Decimal to string
 class DecimalEncoder(json.JSONEncoder):
@@ -25,11 +25,15 @@ class DecimalEncoder(json.JSONEncoder):
 def lambda_handler(event, context):
     resp = table.scan()
     trucks_loc = dict(map(connectionid_map_client, resp['Items']))
-    print(trucks_loc)
+    destination_url = os.environ.get("DESTINATION_URL")
+    if "wss://" in destination_url:
+        destination_url = destination_url.replace("wss://","https://")
+    client = boto3.client('apigatewaymanagementapi', endpoint_url = destination_url)
+    
     # Create the response and add some extra content to support CORS
-    asyncio.run(async_handler(event, context, trucks_loc))
+    asyncio.run(async_handler(event, context, trucks_loc, client))
 
-async def async_handler(event, context, trucks_loc):
+async def async_handler(event, context, trucks_loc, client):
     async for id, query_response in process_query(trucks_loc):
     # Add the search results to the response
         res_truck = query_response['hits']['hits'][0]['_source']

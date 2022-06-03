@@ -1,7 +1,5 @@
-import json
-import boto3
-import os
-import logging
+import boto3, os
+from decimal import Decimal
 
 def lambda_handler(event, context):
     connection_id = event["requestContext"]["connectionId"]
@@ -13,11 +11,11 @@ def lambda_handler(event, context):
         table.put_item(
             Item={
             'connection_Id': connection_id,
-            'matched_truckid' : 5,
-            'from_lon' : 140,
-            'from_lat' : 40,
-            'to_lon' : 100,
-            'to_lat' : 60
+            'matched_truckid' : 3,
+            'from_lon' : Decimal('129.086534'),
+            'from_lat' : Decimal('35.231301'),
+            'to_lon' : Decimal('129.1310207'),
+            'to_lat' : Decimal('35.1730051')
             }
         )
         return {"statusCode": 200, "body": "Connect successful."}
